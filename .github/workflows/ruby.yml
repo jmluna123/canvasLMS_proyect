@@ -1,0 +1,125 @@
+
+
+name: Ruby
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    
+jobs:
+  unit_tests:
+    name: 'Run unit tests'
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: canvas_test
+        ports:
+          - 5432/tcp
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:latest
+        ports:
+          - 6379/tcp
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6.x
+      
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install ruby ruby-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl build-essential
+          sudo gem install bundle
+          sudo gem install bundler -v 2.2.11
+          sudo gem install nokogumbo scrypt sanitize
+          
+      - name: Migrate db and install gems
+        env:
+            DATABASE_URL: postgres://canvas:canvas@localhost:5432/canvas_test
+            RAILS_ENV: test
+            PGPASSWORD: canvas
+        run: |
+          cp ./config/database.yml.example ./config/database.yml
+          cp ./config/security.yml.example ./config/security.yml
+          sudo cp ./config/pg_hba.conf /etc/postgresql/*/main/
+          
+          sudo service postgresql restart
+          sudo cat /var/log/postgresql/postgresql-13-main.log
+          
+          psql -c "create user canvas with password 'canvas';" -U postgres
+          psql -c "create database canvas_test owner canvas;" -U postgres
+          psql -c "alter user canvas superuser createrole createdb replication;" -U postgres
+          bundle install --jobs 4 --retry 3
+          rake db:migrate
+     
+      - name: Run API tests
+        run: |
+          bundle exec rspec ./spec/apis/**/[a-b]*_spec.rb
+          bundle exec rspec ./spec/apis/**/c*_spec.rb
+          bundle exec rspec ./spec/apis/**/[d-m]*_spec.rb
+          bundle exec rspec ./spec/apis/**/[n-z]*_spec.rb
+      
+      - name: Run Controllers tests
+        run: |
+          bundle exec rspec ./spec/controllers/**/*_spec.rb
+      
+      - name: Run Gem Integration tests
+        run: |
+          bundle exec rspec ./spec/gem_integration/**/*_spec.rb
+      
+      - name: Run Helpers tests
+        run: |
+          bundle exec rspec ./spec/helpers/**/*_spec.rb
+      
+      - name: Run Initializers tests
+        run: |
+          bundle exec rspec ./spec/initializers/**/*_spec.rb
+          
+      - name: Run Integration tests
+        run: |
+          bundle exec rspec ./spec/integration/**/*_spec.rb
+      
+      - name: Run Libraries tests
+        run: |
+          bundle exec rspec ./spec/lib/**/*_spec.rb
+          
+      - name: Run Messages tests
+        run: |
+          bundle exec rspec ./spec/messages/**/*_spec.rb
+          
+      - name: Run Migrations tests
+        run: |
+          bundle exec rspec ./spec/migrations/**/*_spec.rb
+          
+      - name: Run Models tests
+        run: |
+          bundle exec rspec ./spec/models/[a-b]*_spec.rb
+          bundle exec rspec ./spec/models/c*_spec.rb
+          bundle exec rspec ./spec/models/[d-m]*_spec.rb
+          bundle exec rspec ./spec/models/[n-z]*_spec.rb
+          bundle exec rspec ./spec/models/*/*_spec.rb
+       
+      - name: Run Observers tests
+        run: |
+          bundle exec rspec ./spec/observers/**/*_spec.rb
+      
+      - name: Run Presenters tests
+        run: |
+          bundle exec rspec ./spec/presenters/**/*_spec.rb
+          
+      - name: Run Models tests
+        run: |
+          bundle exec rspec ./spec/services/**/*_spec.rb
+          
+      - name: Run Models tests
+        run: |
+          bundle exec rspec ./spec/views/**/*_spec.rb
