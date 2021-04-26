@@ -1,4 +1,5 @@
 test:
   adapter: postgresql
-  database: myapp_test
-  username: postgres
+  database: canvas_test
+  username: canvas
+  password: canvas
