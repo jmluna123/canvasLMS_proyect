@@ -36,6 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install ruby ruby-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl build-essential
+          gem install pulsar-client -v '2.6.1.pre.beta.2'
           gem install bundler
           sudo gem install bundler -v 2.2.11
           sudo gem install nokogumbo scrypt sanitize
