@@ -36,7 +36,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install ruby ruby-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl build-essential
-          sudo gem install bundle
           sudo gem install bundler -v 2.2.11
           sudo gem install nokogumbo scrypt sanitize
           
